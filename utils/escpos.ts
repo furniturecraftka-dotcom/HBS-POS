@@ -22,6 +22,7 @@ const line = (char = '-', width = 32) => char.repeat(width) + '\n';
 
 export function generateReceipt(order: Order, config: BusinessConfig): string {
     let commands = '';
+    const currency = 'Rs.'; // Use 'Rs.' for thermal printing alignment
     
     const pad = (str1: string, str2: string, width = 32) => {
         const len = str1.length + str2.length;
@@ -31,39 +32,66 @@ export function generateReceipt(order: Order, config: BusinessConfig): string {
     
     commands += INIT;
     commands += ALIGN_CENTER;
-    // Logo placeholder
-    commands += `${BOLD_ON}${DBL_ON}${config.name}${DBL_OFF}${BOLD_OFF}\n`;
-    commands += `Coles Park, Bangalore\n`;
-    commands += line();
+    
+    // Header
+    if (config.receipt.showHeader) {
+        if (config.receipt.headerFontSize === 'double') {
+            commands += `${BOLD_ON}${DBL_ON}${config.receipt.headerText}${DBL_OFF}${BOLD_OFF}\n`;
+        } else {
+            commands += `${BOLD_ON}${config.receipt.headerText}${BOLD_OFF}\n`;
+        }
+        commands += `Coles Park, Bangalore\n`;
+        commands += line();
+    }
     
     commands += ALIGN_LEFT;
-    commands += `Bill No: ${order.billNumber}\n`;
-    commands += `Date: ${new Date(order.createdAt).toLocaleString()}\n`;
+    if (config.receipt.showBillNumber) {
+        commands += `Bill No: ${order.billNumber}\n`;
+    }
+    if (config.receipt.showDate) {
+        commands += `Date: ${new Date(order.createdAt).toLocaleString()}\n`;
+    }
     commands += line();
     
     commands += `${BOLD_ON}${pad('Item', 'Total')}${BOLD_OFF}\n`;
+    
+    if (config.receipt.itemFontSize === 'double') {
+        commands += DBL_HEIGHT_ON;
+    }
+
     order.items.forEach(item => {
-        commands += `${item.itemName}\n`;
-        commands += pad(`  ${item.quantity} x ${item.unitPrice}`, `${item.lineTotal.toFixed(2)}\n`);
+        let itemName = item.itemName;
+        
+        commands += `${itemName}\n`;
+        // Indent quantity and price line
+        commands += pad(`  ${item.quantity} x ${item.unitPrice}`, item.lineTotal.toFixed(2));
+        commands += `\n`;
     });
+
+    if (config.receipt.itemFontSize === 'double') {
+        commands += DBL_OFF;
+    }
     
     commands += line();
     
     commands += ALIGN_RIGHT;
-    commands += pad('Subtotal: ', `${order.subtotal.toFixed(2)}\n`);
+    commands += pad('Subtotal: ', order.subtotal.toFixed(2));
+    commands += `\n`;
     if (config.gstEnabled) {
-        commands += pad(`GST (${config.gstRate * 100}%): `, `${order.gstAmount.toFixed(2)}\n`);
+        commands += pad(`GST (${config.gstRate * 100}%): `, order.gstAmount.toFixed(2));
+        commands += `\n`;
     }
     commands += `${BOLD_ON}${DBL_HEIGHT_ON}`;
-    commands += pad('TOTAL: ', `${config.currency}${order.total.toFixed(2)}\n`);
+    commands += pad('TOTAL: ', `${currency}${order.total.toFixed(2)}`);
+    commands += `\n`;
     commands += `${DBL_OFF}${BOLD_OFF}`;
     
     commands += line();
     commands += ALIGN_CENTER;
-    commands += `${config.footerMessage}\n\n\n`;
+    commands += `${config.receipt.footerText}\n\n\n`;
     commands += CUT;
 
-    return commands;
+    return commands.replace(/₹/g, 'Rs.').replace(/❤️/g, '');
 }
 
 
@@ -93,5 +121,5 @@ export function generateKOT(order: Order): string {
     commands += `\n\n\n`;
     commands += CUT;
 
-    return commands;
+    return commands.replace(/₹/g, 'Rs.').replace(/❤️/g, '');
 }

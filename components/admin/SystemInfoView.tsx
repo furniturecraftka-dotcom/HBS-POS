@@ -1,5 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { usePos } from '../../context/usePos';
+import { ReceiptConfig } from '../../types';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div className="bg-slate-800 p-6 rounded-lg shadow-lg mb-6">
@@ -14,10 +16,162 @@ const CodeBlock: React.FC<{ children: string }> = ({ children }) => (
     </pre>
 );
 
+const ReceiptConfigForm: React.FC = () => {
+    const { config, updateReceiptConfig } = usePos();
+    const [localConfig, setLocalConfig] = useState<ReceiptConfig>(config.receipt);
+    const [isSaved, setIsSaved] = useState(false);
+
+    const handleChange = (field: keyof ReceiptConfig, value: any) => {
+        setLocalConfig(prev => ({ ...prev, [field]: value }));
+        setIsSaved(false);
+    };
+
+    const handleSave = () => {
+        updateReceiptConfig(localConfig);
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 2000);
+    };
+
+    return (
+        <Section title="Receipt Configuration">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-2">
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Header Text</label>
+                    <input 
+                        type="text" 
+                        value={localConfig.headerText} 
+                        onChange={(e) => handleChange('headerText', e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-500"
+                    />
+                </div>
+                <div className="col-span-2">
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Footer Text</label>
+                    <input 
+                        type="text" 
+                        value={localConfig.footerText} 
+                        onChange={(e) => handleChange('footerText', e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-500"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Header Font Size</label>
+                    <select 
+                        value={localConfig.headerFontSize} 
+                        onChange={(e) => handleChange('headerFontSize', e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-500"
+                    >
+                        <option value="normal">Normal</option>
+                        <option value="double">Double Height</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Item Font Size</label>
+                    <select 
+                        value={localConfig.itemFontSize} 
+                        onChange={(e) => handleChange('itemFontSize', e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-500"
+                    >
+                        <option value="normal">Normal</option>
+                        <option value="double">Double Height</option>
+                    </select>
+                </div>
+                <div className="flex items-center gap-2">
+                    <input 
+                        type="checkbox" 
+                        id="showHeader"
+                        checked={localConfig.showHeader} 
+                        onChange={(e) => handleChange('showHeader', e.target.checked)}
+                        className="w-4 h-4 rounded bg-slate-900 border-slate-600 text-amber-500 focus:ring-amber-500"
+                    />
+                    <label htmlFor="showHeader" className="text-slate-300">Show Header</label>
+                </div>
+                <div className="flex items-center gap-2">
+                    <input 
+                        type="checkbox" 
+                        id="showDate"
+                        checked={localConfig.showDate} 
+                        onChange={(e) => handleChange('showDate', e.target.checked)}
+                        className="w-4 h-4 rounded bg-slate-900 border-slate-600 text-amber-500 focus:ring-amber-500"
+                    />
+                    <label htmlFor="showDate" className="text-slate-300">Show Date</label>
+                </div>
+                <div className="flex items-center gap-2">
+                    <input 
+                        type="checkbox" 
+                        id="showBillNumber"
+                        checked={localConfig.showBillNumber} 
+                        onChange={(e) => handleChange('showBillNumber', e.target.checked)}
+                        className="w-4 h-4 rounded bg-slate-900 border-slate-600 text-amber-500 focus:ring-amber-500"
+                    />
+                    <label htmlFor="showBillNumber" className="text-slate-300">Show Bill Number</label>
+                </div>
+                <div className="flex items-center gap-2">
+                    <input 
+                        type="checkbox" 
+                        id="useShortNames"
+                        checked={localConfig.useShortNames} 
+                        onChange={(e) => handleChange('useShortNames', e.target.checked)}
+                        className="w-4 h-4 rounded bg-slate-900 border-slate-600 text-amber-500 focus:ring-amber-500"
+                    />
+                    <label htmlFor="useShortNames" className="text-slate-300">Use Short Names for Items</label>
+                </div>
+                <div className="col-span-2 mt-2">
+                    <button 
+                        onClick={handleSave}
+                        className={`px-4 py-2 rounded font-bold text-slate-900 transition-colors ${isSaved ? 'bg-green-500' : 'bg-amber-500 hover:bg-amber-600'}`}
+                    >
+                        {isSaved ? 'Saved!' : 'Save Configuration'}
+                    </button>
+                </div>
+            </div>
+        </Section>
+    );
+};
+
+const DataPrivacyTable: React.FC = () => (
+    <Section title="Data Privacy & Permissions">
+        <p className="mb-4 text-slate-300">
+            We value your privacy. This application requests specific permissions solely to enable core functionality. 
+            We do not sell your data.
+        </p>
+        <div className="overflow-x-auto">
+            <table className="min-w-full bg-slate-900 rounded-lg overflow-hidden">
+                <thead className="bg-slate-700">
+                    <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Permission</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Primary Use</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Your Privacy</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                    <tr>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">Camera</td>
+                        <td className="px-6 py-4 text-sm text-slate-400">Scanning QR codes for payments or inventory barcodes.</td>
+                        <td className="px-6 py-4 text-sm text-slate-400">Processed locally on your device. Images are never saved or uploaded to any server.</td>
+                    </tr>
+                    <tr>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">Bluetooth</td>
+                        <td className="px-6 py-4 text-sm text-slate-400">Connecting to thermal receipt printers.</td>
+                        <td className="px-6 py-4 text-sm text-slate-400">Used exclusively for printer communication. No other devices are scanned or tracked.</td>
+                    </tr>
+                    <tr>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">Location</td>
+                        <td className="px-6 py-4 text-sm text-slate-400">Required by Android to scan for nearby Bluetooth devices.</td>
+                        <td className="px-6 py-4 text-sm text-slate-400">We use the 'neverForLocation' flag where possible. We do not track, store, or share your physical location.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </Section>
+);
+
 const SystemInfoView: React.FC = () => {
     return (
         <div>
-            <h2 className="text-3xl font-bold text-slate-100 mb-6">System Architecture & Documentation</h2>
+            <h2 className="text-3xl font-bold text-slate-100 mb-6">System Settings & Info</h2>
+            
+            <ReceiptConfigForm />
+            <DataPrivacyTable />
             
             <Section title="Recommended Tech Stack">
                 <ul>

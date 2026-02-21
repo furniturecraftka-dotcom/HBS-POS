@@ -1,6 +1,6 @@
 import React, { createContext, useState, useCallback, ReactNode } from 'react';
 // Fix: Enums like PaymentStatus are used as values at runtime and must be imported as values, not just types.
-import type { User, Order, OrderItem, MenuItem, BusinessConfig } from '../types';
+import type { User, Order, OrderItem, MenuItem, Category, BusinessConfig } from '../types';
 import { users as mockUsers } from '../data/users';
 import { menuItems as mockMenuItems, categories as mockCategories } from '../data/menu';
 import { Role, OrderType, PaymentStatus } from '../types';
@@ -11,7 +11,7 @@ interface PosContextType {
   logout: () => void;
   users: User[];
   menuItems: MenuItem[];
-  categories: typeof mockCategories;
+  categories: Category[];
   activeOrder: Order | null;
   startNewOrder: () => void;
   addItemToOrder: (itemId: number) => void;
@@ -23,6 +23,13 @@ interface PosContextType {
   config: BusinessConfig;
   toggleGst: () => void;
   getCompletedOrders: (startDate?: Date, endDate?: Date) => Order[];
+  addMenuItem: (item: Omit<MenuItem, 'id'>) => void;
+  updateMenuItem: (item: MenuItem) => void;
+  deleteMenuItem: (id: number) => void;
+  addCategory: (category: Omit<Category, 'id'>) => void;
+  updateCategory: (category: Category) => void;
+  deleteCategory: (id: number) => void;
+  updateReceiptConfig: (config: ReceiptConfig) => void;
 }
 
 export const PosContext = createContext<PosContextType | undefined>(undefined);
@@ -53,6 +60,8 @@ export const PosProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
+  const [categories, setCategories] = useState<Category[]>(mockCategories);
   const [config, setConfig] = useState<BusinessConfig>({
       name: 'H.B.S Coles Park Standard Kabab Corner',
       type: 'Quick Service Restaurant (QSR)',
@@ -62,6 +71,16 @@ export const PosProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       gstRate: 0.05, // 5%
       defaultOrderType: OrderType.Takeaway,
       footerMessage: "Thank you for visiting. Made with love ❤️",
+      receipt: {
+          headerText: 'H.B.S Coles Park Standard Kabab Corner',
+          footerText: 'Thank you for visiting.',
+          showHeader: true,
+          showDate: true,
+          showBillNumber: true,
+          headerFontSize: 'double',
+          itemFontSize: 'normal',
+          useShortNames: false
+      }
   });
   
   const calculateTotals = useCallback((items: OrderItem[]): Pick<Order, 'subtotal' | 'gstAmount' | 'total'> => {
@@ -105,7 +124,7 @@ export const PosProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addItemToOrder = (itemId: number) => {
     if (!activeOrder || activeOrder.locked) return;
 
-    const itemToAdd = mockMenuItems.find(i => i.id === itemId);
+    const itemToAdd = menuItems.find(i => i.id === itemId);
     if (!itemToAdd) return;
 
     const existingItem = activeOrder.items.find(i => i.menuItemId === itemId);
@@ -120,7 +139,7 @@ export const PosProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         id: Date.now(),
         orderId: activeOrder.id,
         menuItemId: itemToAdd.id,
-        itemName: itemToAdd.name,
+        itemName: config.receipt.useShortNames && itemToAdd.shortName ? itemToAdd.shortName : itemToAdd.name,
         quantity: 1,
         unitPrice: itemToAdd.price,
         lineTotal: itemToAdd.price,
@@ -184,7 +203,15 @@ export const PosProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const toggleGst = () => {
-      setConfig(prev => ({...prev, gstEnabled: !prev.gstEnabled}));
+      const newGstEnabled = !config.gstEnabled;
+      setConfig(prev => ({...prev, gstEnabled: newGstEnabled}));
+      
+      if (activeOrder) {
+          const subtotal = activeOrder.items.reduce((sum, item) => sum + item.lineTotal, 0);
+          const gstAmount = newGstEnabled ? subtotal * config.gstRate : 0;
+          const total = subtotal + gstAmount;
+          setActiveOrder({...activeOrder, subtotal, gstAmount, total});
+      }
   }
 
   const getCompletedOrders = (startDate?: Date, endDate?: Date) => {
@@ -200,13 +227,46 @@ export const PosProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
   };
 
+  const addMenuItem = (item: Omit<MenuItem, 'id'>) => {
+    const newId = menuItems.length > 0 ? Math.max(...menuItems.map(i => i.id)) + 1 : 1;
+    setMenuItems([...menuItems, { ...item, id: newId }]);
+  };
+
+  const updateMenuItem = (item: MenuItem) => {
+    setMenuItems(menuItems.map(i => i.id === item.id ? item : i));
+  };
+
+  const deleteMenuItem = (id: number) => {
+    setMenuItems(menuItems.filter(i => i.id !== id));
+  };
+
+  const addCategory = (category: Omit<Category, 'id'>) => {
+    const newId = categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1;
+    setCategories([...categories, { ...category, id: newId }]);
+  };
+
+  const updateCategory = (category: Category) => {
+    setCategories(categories.map(c => c.id === category.id ? category : c));
+  };
+
+  const deleteCategory = (id: number) => {
+    setCategories(categories.filter(c => c.id !== id));
+  };
+
+  const updateReceiptConfig = (receiptConfig: ReceiptConfig) => {
+      setConfig(prev => ({
+          ...prev,
+          receipt: receiptConfig
+      }));
+  };
+
   const value = {
     currentUser,
     login,
     logout,
     users: mockUsers,
-    menuItems: mockMenuItems,
-    categories: mockCategories,
+    menuItems,
+    categories,
     activeOrder,
     startNewOrder,
     addItemToOrder,
@@ -218,6 +278,13 @@ export const PosProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     config,
     toggleGst,
     getCompletedOrders,
+    addMenuItem,
+    updateMenuItem,
+    deleteMenuItem,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    updateReceiptConfig,
   };
 
   return <PosContext.Provider value={value}>{children}</PosContext.Provider>;

@@ -8,34 +8,54 @@ import PrintPreviewModal from './PrintPreviewModal';
 import { generateKOT, generateReceipt } from '../utils/escpos';
 
 const OrderSummary: React.FC = () => {
-  const { activeOrder, updateItemQuantity, config, updateOrderStatus, startNewOrder, getHeldOrders, resumeOrder } = usePos();
+  const { activeOrder, updateItemQuantity, config, updateOrderStatus, startNewOrder, getHeldOrders, resumeOrder, toggleGst } = usePos();
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
   const [showHeldOrders, setShowHeldOrders] = useState(false);
-  const [printData, setPrintData] = useState<{ title: string, content: string } | null>(null);
+  const [printData, setPrintData] = useState<{ title: string, content: string, order?: any } | null>(null);
 
   const heldOrders = getHeldOrders();
 
   const handlePrintKOT = () => {
     if (activeOrder && activeOrder.items.length > 0) {
         const kotContent = generateKOT(activeOrder);
-        setPrintData({ title: "Kitchen Order Ticket (KOT)", content: kotContent });
+        setPrintData({ title: "Kitchen Order Ticket (KOT)", content: kotContent, order: activeOrder });
     }
   };
 
   const handlePaymentSuccess = () => {
     if(activeOrder) {
         const receiptContent = generateReceipt(activeOrder, config);
-        setPrintData({ title: "Receipt", content: receiptContent });
+        setPrintData({ title: "Receipt", content: receiptContent, order: activeOrder });
         updateOrderStatus(PaymentStatus.Paid);
     }
     setPaymentModalOpen(false);
+  };
+
+  const handleQuickCash = () => {
+      if(activeOrder && activeOrder.items.length > 0) {
+          // Assume exact cash payment
+          const receiptContent = generateReceipt(activeOrder, config);
+          setPrintData({ title: "Receipt", content: receiptContent, order: activeOrder });
+          updateOrderStatus(PaymentStatus.Paid);
+      }
   };
   
   if (!activeOrder) return <div className="text-center text-slate-400">No active order.</div>;
 
   return (
     <div className="flex flex-col h-full">
-      <h2 className="text-xl font-bold mb-1 text-slate-200">Current Order</h2>
+      <div className="flex justify-between items-center mb-1">
+          <h2 className="text-xl font-bold text-slate-200">Current Order</h2>
+          <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">GST</span>
+              <button 
+                  onClick={toggleGst}
+                  className={`w-10 h-5 rounded-full flex items-center transition-colors ${config.gstEnabled ? 'bg-amber-500' : 'bg-slate-600'}`}
+              >
+                  <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${config.gstEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+          </div>
+      </div>
       <p className="text-sm text-slate-400 mb-4">{activeOrder.billNumber}</p>
       
       <div className="flex-grow overflow-y-auto -mr-4 pr-4 border-t border-b border-slate-700 py-2">
@@ -76,13 +96,18 @@ const OrderSummary: React.FC = () => {
                 {heldOrders.length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{heldOrders.length}</span>}
             </button>
         </div>
-        <button onClick={() => setPaymentModalOpen(true)} disabled={activeOrder.items.length === 0} className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-lg mt-3 text-lg disabled:bg-slate-700 disabled:text-slate-500">
-          Pay
-        </button>
+        <div className="grid grid-cols-2 gap-3 mt-3">
+            <button onClick={handleQuickCash} disabled={activeOrder.items.length === 0} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg text-lg disabled:bg-slate-700 disabled:text-slate-500">
+                Quick Cash
+            </button>
+            <button onClick={() => setPaymentModalOpen(true)} disabled={activeOrder.items.length === 0} className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-lg text-lg disabled:bg-slate-700 disabled:text-slate-500">
+                Pay
+            </button>
+        </div>
       </div>
 
       {isPaymentModalOpen && <PaymentModal order={activeOrder} onClose={() => setPaymentModalOpen(false)} onPaymentSuccess={handlePaymentSuccess} />}
-      {printData && <PrintPreviewModal title={printData.title} content={printData.content} onClose={() => setPrintData(null)} />}
+      {printData && <PrintPreviewModal title={printData.title} content={printData.content} order={printData.order} onClose={() => setPrintData(null)} />}
       
       {showHeldOrders && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-30" onClick={() => setShowHeldOrders(false)}>

@@ -26,15 +26,15 @@ const BillingScreen: React.FC = () => {
             </button>
         </div>
       </header>
-      <div className="flex flex-grow overflow-hidden">
-        <div className="w-3/5 xl:w-2/3 flex flex-col p-4 overflow-y-auto">
+      <div className="flex flex-col md:flex-row flex-grow overflow-hidden">
+        <div className="w-full md:w-3/5 xl:w-2/3 flex flex-col p-4 overflow-y-auto order-2 md:order-1 h-1/2 md:h-auto">
           <CategoryTabs 
             selectedCategoryId={selectedCategoryId} 
             onSelectCategory={setSelectedCategoryId}
           />
           <MenuItemGrid items={filteredMenuItems} />
         </div>
-        <div className="w-2/5 xl:w-1/3 bg-slate-800 p-4 flex flex-col shadow-lg">
+        <div className="w-full md:w-2/5 xl:w-1/3 bg-slate-800 p-4 flex flex-col shadow-lg order-1 md:order-2 h-1/2 md:h-auto border-b md:border-b-0 border-slate-700 z-10">
           <OrderSummary />
         </div>
       </div>

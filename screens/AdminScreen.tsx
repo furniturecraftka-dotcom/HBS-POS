@@ -4,9 +4,10 @@ import { usePos } from '../context/usePos';
 import ReportsView from '../components/admin/ReportsView';
 import UserManagementView from '../components/admin/UserManagementView';
 import SystemInfoView from '../components/admin/SystemInfoView';
-import { ChartBarIcon, UsersIcon, InformationCircleIcon, LogoutIcon } from '../components/icons';
+import MenuManagementView from '../components/admin/MenuManagementView';
+import { ChartBarIcon, UsersIcon, InformationCircleIcon, LogoutIcon, ClipboardListIcon } from '../components/icons';
 
-type AdminTab = 'reports' | 'users' | 'system';
+type AdminTab = 'reports' | 'users' | 'system' | 'menu';
 
 const AdminScreen: React.FC = () => {
   const { currentUser, logout } = usePos();
@@ -20,6 +21,8 @@ const AdminScreen: React.FC = () => {
         return <UserManagementView />;
       case 'system':
         return <SystemInfoView />;
+      case 'menu':
+        return <MenuManagementView />;
       default:
         return null;
     }
@@ -44,6 +47,7 @@ const AdminScreen: React.FC = () => {
             <h1 className="text-2xl font-bold text-amber-400 mb-8 px-2">Admin Panel</h1>
             <nav className="space-y-2">
                 <TabButton tabName="reports" icon={<ChartBarIcon className="w-6 h-6"/>} label="Reports" />
+                <TabButton tabName="menu" icon={<ClipboardListIcon className="w-6 h-6"/>} label="Menu Management" />
                 <TabButton tabName="users" icon={<UsersIcon className="w-6 h-6"/>} label="User Management" />
                 <TabButton tabName="system" icon={<InformationCircleIcon className="w-6 h-6"/>} label="System Info" />
             </nav>

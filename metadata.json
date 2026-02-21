@@ -1,5 +1,5 @@
 {
   "name": "H.B.S. Kabab Corner POS",
   "description": "A high-speed, offline-first Point of Sale (POS) system for H.B.S. Coles Park Standard Kabab Corner, optimized for QSR workflows, multi-user support on a local network, and thermal receipt printing.",
-  "requestFramePermissions": []
+  "requestFramePermissions": ["bluetooth"]
 }

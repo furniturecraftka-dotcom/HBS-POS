@@ -21,6 +21,8 @@ export interface Category {
 export interface MenuItem {
   id: number;
   name: string;
+  shortName?: string;
+  description?: string;
   categoryId: number;
   price: number;
   isAvailable: boolean;
@@ -75,6 +77,17 @@ export interface Payment {
   amount: number;
 }
 
+export interface ReceiptConfig {
+  headerText: string;
+  footerText: string;
+  showHeader: boolean;
+  showDate: boolean;
+  showBillNumber: boolean;
+  headerFontSize: 'normal' | 'double';
+  itemFontSize: 'normal' | 'double';
+  useShortNames: boolean;
+}
+
 export interface BusinessConfig {
     name: string;
     type: string;
@@ -84,4 +97,5 @@ export interface BusinessConfig {
     gstRate: number; // as a decimal, e.g., 0.05 for 5%
     defaultOrderType: OrderType;
     footerMessage: string;
+    receipt: ReceiptConfig;
 }
